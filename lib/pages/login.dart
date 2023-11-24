@@ -30,9 +30,6 @@ class Login extends StatelessWidget {
             child: TextFormField(
               controller: username,
               decoration: const InputDecoration(hintText: 'Usuario'),
-              obscureText: true,
-              enableSuggestions: false,
-              autocorrect: false,
             ),
           ),
           Padding(
@@ -40,6 +37,9 @@ class Login extends StatelessWidget {
             child: TextFormField(
               controller: password,
               decoration: const InputDecoration(hintText: 'Contraseña'),
+              obscureText: true,
+              enableSuggestions: false,
+              autocorrect: false,
             ),
           ),
           Padding(
@@ -51,8 +51,6 @@ class Login extends StatelessWidget {
                 textStyle: const TextStyle(fontSize: 14),
               ),
               onPressed: () async{
-                var refreshToken = await secureStorage.readToken('refresh');
-                authController.performTokenRefresh(refreshToken!);
                 if(!context.mounted) return;
                 authController.loginUser(context, username.text, password.text);
               },

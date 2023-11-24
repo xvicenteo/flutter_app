@@ -1,35 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:flutterapps/pages/routes/dashboard.dart';
+import 'package:flutterapps/pages/routes/bills.dart';
+import 'package:flutterapps/pages/login.dart';
+
+import 'package:flutterapps/user_services/storage.dart';
 
 class Home extends StatefulWidget {
-  final token;
-  const Home({@required this.token, super.key});
+  const Home({super.key});
 
   @override
   State<Home> createState() => _HomeState();
 }
 
 class _HomeState extends State<Home> {
+  final secureStorage = SecureStorageService();
+  var currentIndex = 0;
+  var screens = [
+    const Dashboard(),
+    const Bills(),
+  ];
 
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-
+  void logout(BuildContext context) async {
+    await secureStorage.deleteTokens();
+    if(!context.mounted) return;
+    Navigator.push(context, MaterialPageRoute(builder: (context) => const Login()));
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+
+    return Scaffold(
         backgroundColor: Colors.grey,
-        body: Column (
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(0,20,0,0),
-              child: Text('Home'),
+        body: screens[currentIndex],
+        bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          currentIndex: currentIndex,
+          onTap: (index) {
+            switch(index) {
+              case 0: setState(() => currentIndex = index);
+              case 1: setState(() => currentIndex = index);
+              case 2: logout(context);
+            }
+          },
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home'
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.wallet),
+              label: 'Facturas',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.logout),
+              label: 'Cerrar sessión',
             )
           ],
-        )
+        ),
     );
+
+
   }
 }

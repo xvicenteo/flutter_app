@@ -22,4 +22,8 @@ class SecureStorageService {
     return await _storage.read(key: key);
   }
 
+  Future<void> deleteTokens() async {
+    await _storage.deleteAll();
+  }
+
 }

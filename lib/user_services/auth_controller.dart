@@ -1,29 +1,33 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutterapps/user_services/interceptors.dart';
 import 'package:flutterapps/user_services/storage.dart';
+import 'package:dio/dio.dart';
 
 import 'package:flutterapps/pages/home.dart';
 
 class AuthController {
-
+  late final Dio _dio;
   final secureStorage = SecureStorageService();
+
+  AuthController() {
+    _dio = Dio();
+    _dio.interceptors.add(DioInterceptorLogin());
+  }
 
   Future loginUser(BuildContext context, String username, String password) async {
     const url = 'http://10.10.110.74:8005/rest/v1/token/';
 
-    final response = await http.post(Uri.parse(url), body: {
+    final response = await _dio.post(url, data: {
       "username": username,
       "password": password
     });
 
     if(response.statusCode == 200) {
-      var loginArr = jsonDecode(response.body);
-      await secureStorage.writeToken('token', loginArr['access']);
-      await secureStorage.writeToken('refresh', loginArr['refresh']);
+      await secureStorage.writeToken('token', response.data['access']);
+      await secureStorage.writeToken('refresh', response.data['refresh']);
 
       if(!context.mounted) return;
-      Navigator.push(context, MaterialPageRoute(builder: (context) => Home(token: secureStorage.readToken('refresh'))));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const Home()));
 
     } else {
       print('error login');
@@ -32,34 +36,29 @@ class AuthController {
 
   Future refreshToken (String refreshToken) async{
 
-    const String refreshUrl = "http://10.10.110.74:8005/rest/v1/token/refresh/";
+    const refreshUrl = "http://10.10.110.74:8005/rest/v1/token/refresh/";
     var refreshToken = await secureStorage.readToken('refresh');
 
-    final response = await http.post(Uri.parse(refreshUrl), body: {
+    final response = await _dio.post(refreshUrl, data: {
       "refresh": refreshToken
     });
 
     if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to refresh access token');
-    }
-
-  }
-
-  void performTokenRefresh(String refreshToken) async {
-    try {
-      final refreshResponse = await AuthController().refreshToken(refreshToken);
-
-      // Handle the refresh token response containing the new access token
-      final newAccessToken = refreshResponse['access'];
-
-      // Update the stored access token with the new one in Flutter's storage mechanism
+      final newAccessToken = response.data['access'];
       await secureStorage.writeToken('token', newAccessToken);
+      return true;
+    } else {
+      await secureStorage.deleteTokens();
 
-    } catch (e) {
-      print('Token refresh failed: $e');
+      return false;
     }
+
   }
+
+
+  void cleanTokens() async {
+    await secureStorage.deleteTokens();
+  }
+
 }
 
