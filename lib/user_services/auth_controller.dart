@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutterapps/user_services/interceptors.dart';
 import 'package:flutterapps/user_services/storage.dart';
 import 'package:dio/dio.dart';
+import 'package:flutterapps/main.dart';
 
 import 'package:flutterapps/pages/home.dart';
 
@@ -39,18 +40,27 @@ class AuthController {
     const refreshUrl = "http://10.10.110.74:8005/rest/v1/token/refresh/";
     var refreshToken = await secureStorage.readToken('refresh');
 
-    final response = await _dio.post(refreshUrl, data: {
-      "refresh": refreshToken
-    });
+    try {
+      final response = await _dio.post(refreshUrl, data: {
+        "refresh": refreshToken
+      });
 
-    if (response.statusCode == 200) {
-      final newAccessToken = response.data['access'];
-      await secureStorage.writeToken('token', newAccessToken);
-      return true;
-    } else {
-      await secureStorage.deleteTokens();
+      if (response.statusCode == 200) {
+        final newAccessToken = response.data['access'];
+        await secureStorage.writeToken('token', newAccessToken);
+        return true;
+      } else {
+        await secureStorage.deleteTokens();
+        return false;
+      }
 
-      return false;
+    } on DioException catch (err) {
+      if(err.response != null) {
+        await secureStorage.deleteTokens();
+        secureStorage.deleteTokens();
+        navKey.currentState?.pushNamed('/Login');
+        return false;
+      }
     }
 
   }

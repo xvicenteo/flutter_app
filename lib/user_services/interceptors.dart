@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutterapps/user_services/storage.dart';
 import 'package:flutterapps/user_services/auth_controller.dart';
+import 'package:flutterapps/main.dart';
 
 class DioInterceptor extends Interceptor {
 
@@ -27,16 +27,19 @@ class DioInterceptor extends Interceptor {
 
     if(err.response?.statusCode == 401) {
       final refresh = await secureStorage.readToken('refresh');
-      if(await authController.refreshToken(refresh!)) {
-        final token = await secureStorage.readToken('token');
-        err.requestOptions.headers['Authorization'] = 'Bearer $token';
-        return handler.resolve(await _retry(err.requestOptions));
+      if(refresh != null && refresh.isNotEmpty) {
+        if (await authController.refreshToken(refresh!)) {
+          final token = await secureStorage.readToken('token');
+          err.requestOptions.headers['Authorization'] = 'Bearer $token';
+          return handler.resolve(await _retry(err.requestOptions));
+        }
       }
-      debugPrint('no se refresca el token');
-      return secureStorage.deleteTokens();
+      secureStorage.deleteTokens();
+      navKey.currentState?.pushNamed('/Login');
+
 
     }
-    super.onError(err, handler);
+    // super.onError(err, handler);
   }
 
   Future <Response<dynamic>> _retry(RequestOptions requestOptions) async {
